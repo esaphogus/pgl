@@ -1,0 +1,6 @@
+kafka-python
+requests
+selenium
+bs4
+pandas
+pytz

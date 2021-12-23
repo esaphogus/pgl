@@ -9,16 +9,9 @@ volumes:
         driver: local
 
 services:
-    airflow:
-      build: ./airflow
-      ports:
-        - 8088:8080
-      environment:   
-        - FERNET_KEY="bCH80KIHfj-_UAt1b4gaFPJvQCMF73FQRFJGtOhFA-M="
-      volumes:
-        - ./dags/:/usr/local/airflow/dags
-        - ./scripts/:/usr/local/scripts
-        
+#-----------
+# -- HDFS --
+#-----------
     namenode:
         image: bde2020/hadoop-namenode:1.1.0-hadoop2.8-java8
         container_name: namenode
@@ -49,7 +42,9 @@ services:
             - 8089:8088
         environment:
             - NAMENODE_HOST=namenode
-
+#------------
+# -- Spark --
+#------------
     spark-master:
         image: andreper/spark-master:3.0.0
         container_name: spark-master
@@ -99,3 +94,51 @@ services:
           - 4040:4040
         volumes:
           - shared-workspace:/opt/workspace
+#------------
+# -- Kafka --
+#------------
+    zookeeper:
+      image: confluentinc/cp-zookeeper:latest
+      environment:
+        ZOOKEEPER_CLIENT_PORT: 2181
+        ZOOKEEPER_TICK_TIME: 2000
+  
+    broker:
+      image: confluentinc/cp-kafka:latest
+      depends_on:
+        - zookeeper
+      environment:
+        KAFKA_BROKER_ID: 1
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    
+    middle-rate:
+        build: ./middle_rate
+        depends_on:
+            - broker
+        environment:
+            KAFKA_BROKER_URL: broker:9092
+            TRANSACTIONS_TOPIC: queueing.crude
+            TRANSACTIONS_PER_SECOND: 1000
+        volumes:
+            - ./scripts:/usr/scripts
+            - ./debug:/usr/debug
+        
+#--------------
+# -- Airflow --
+#--------------
+    airflow:
+      build: ./airflow
+      ports:
+        - 8088:8080
+      environment:   
+        - FERNET_KEY="bCH80KIHfj-_UAt1b4gaFPJvQCMF73FQRFJGtOhFA-M="
+      volumes:
+        - ./dags/:/usr/local/airflow/dags
+        - ./scripts/:/usr/local/scripts
+        
+networks:
+    default:
+        external:
+            name: kafka-network
