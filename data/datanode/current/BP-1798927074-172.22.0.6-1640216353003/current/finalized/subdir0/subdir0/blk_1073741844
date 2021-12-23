@@ -1,0 +1,2 @@
+v1
+{"path":"hdfs://namenode:9000/crudeoil/part-00000-1919beae-720c-4dbc-9180-798f8e85b21c-c000.json","size":2804,"isDir":false,"modificationTime":1640223594518,"blockReplication":3,"blockSize":134217728,"action":"add"}
