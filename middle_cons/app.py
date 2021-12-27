@@ -15,7 +15,7 @@ def connect():
                             PORT=57155; \
                             UID=erm; \
                             PWD=Jakarta1!; \
-                            DATABASE=ERM; 
+                            DATABASE=ERM_datamart; 
                             Trusted_Connection=yes''')
     return connStr
 

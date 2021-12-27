@@ -47,20 +47,22 @@ def sendEmail(sender, password, recipient, content):
         )
         print("email sent to " + str(recipient))
 
-def getEmailContent(event, value, timestamp):
+def getEmailContent(value, timestamp):
     #Kindly change templateFilePath using needed path
     templateFilePath = "EmailTemplate.html"
     soup = BeautifulSoup(open(templateFilePath),"html.parser")
     content = soup.find(class_='content-row')
-        
-    eventRow = BeautifulSoup("""<tr><td>1</td><td>"""+event+"""</td><td>"""+str(value)+"""</td><td>The value are below the treshold. Please prepare for the Action plan.</td></tr>\n""","html.parser")
-
-    content.insert(1, eventRow)
+    
+    for index,row in value.iterrows():
+        view = GetRows(row['kri_id'])
+        print(view)
+        eventRow = BeautifulSoup("""<tr><td>1</td><td>"""+row['volume']+"""</td><td>"""+row['city']+"""</td><td>"""+row['timestamp']+"""</td></tr>\n""","html.parser")
+        content.insert(1, eventRow)
 
     return soup
 
 def GetRows(source):
-    sql = "Select * From " + source
+    sql = "Select TOP 10 * From " + source + "ORDER BY timestamp DESC"
     return pd.read_sql(sql, connStr) 
 
 def CheckValue(values, _trigger, kri_type):
@@ -70,9 +72,9 @@ def CheckValue(values, _trigger, kri_type):
         return float(values[len(values)-1]) >= _trigger
 
 #TODO : update sender and recipient method
-def TriggerSMTP(kri_desc, value, timestamp):
-    content = getEmailContent(kri_desc, value, timestamp)
-    sendEmail("ermwebui.email@gmail.com", "Jakarta1!", "iqbal.lukman@pwc.com", content)
+def TriggerSMTP(value, timestamp):
+    content = getEmailContent(value, timestamp)
+    sendEmail("ermwebui.email@gmail.com", "Jakarta1!", "muhiqballukman@gmail.com", content)
 
 if __name__ == '__main__':
     # connStr = pyodbc.connect('''DRIVER={FreeTDS}; \
@@ -84,23 +86,17 @@ if __name__ == '__main__':
     #                             Trusted_Connection=yes''')
 
     connStr = pyodbc.connect('''DRIVER={ODBC Driver 13 for SQL Server}; \
-                                SERVER=IDPF1RNMKZ/PROD17,57155; \
+                                SERVER=IDFP1RNMKZ\PROD2017,57155; \
                                 UID=sa; \
                                 PWD=Jakarta1!; \
-                                DATABASE=ERM; 
+                                DATABASE=ERM_datamart; 
                                 Trusted_Connection=yes''')
 
-    selection = GetRows('KRISelection')
-    setup = GetRows('KRISetup')
+    data = GetRows('CrudeOil')
+    data = data.dropna()
 
-    selection = selection.merge(setup, how='left', on='kri_id')
-    selection = selection.dropna()
-
-    for index,row in selection.iterrows():
-        view = GetRows(row['kri_id'])
+    for index,row in data.iterrows():
+        view = GetRows(row['timestamp'])
         print(view)
-        view = view[view['prediction'] == 'No']
-
-        #TODO : dynamic target variable
-        if(CheckValue(view['price'].values, row['action_plan_trigger_amount'], row['kri_type'])):
-            TriggerSMTP(row['kri_desc_x'], view['price'].values[len(view['co_price'].values)-1], datetime.datetime.now().strftime("%d %B, %Y"))
+    
+    TriggerSMTP(data,datetime.datetime.now().strftime("%d %B, %Y"))

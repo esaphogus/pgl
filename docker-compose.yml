@@ -124,6 +124,18 @@ services:
         volumes:
             - ./scripts:/usr/scripts
             - ./debug:/usr/debug
+
+    middle-rate-cons:
+        build: ./middle_cons
+        depends_on:
+            - broker
+        environment:
+            KAFKA_BROKER_URL: broker:9092
+            TRANSACTIONS_TOPIC: queueing.crude
+            TRANSACTIONS_PER_SECOND: 1000
+        volumes:
+            - ./scripts:/usr/scripts
+            - ./debug:/usr/debug
         
 #--------------
 # -- Airflow --
@@ -137,7 +149,7 @@ services:
       volumes:
         - ./dags/:/usr/local/airflow/dags
         - ./scripts/:/usr/local/scripts
-        
+
 networks:
     default:
         external:
