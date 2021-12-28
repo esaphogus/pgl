@@ -4,7 +4,7 @@ from airflow import models
 from airflow.utils import db
 
 JUPYTERLAB_CONFIG = json.dumps({
-    "key_file": "/usr/local/airflow/dags/id_rsa"
+    "key_file": "/usr/local/scripts/id_rsa"
 })
 
 def add_connection(conn_id, conn_type, host, port, extra=None):
